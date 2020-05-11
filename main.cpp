@@ -1,7 +1,6 @@
 #include<bits/stdc++.h>
 #define endl "\n"
 #define ll long long
-
 using namespace std;
 
 class User{
@@ -23,9 +22,17 @@ class User{
         void getPassword(ofstream& userOutputFile);
         void newUserDetails(ofstream& userOutputFile);
         void generateUserID(ofstream& userOutputFile);
-
+        string returnName();
+        string returnPassword();
 };
 
+string User::returnName() {
+    return name;
+}
+
+string User::returnPassword() {
+    return password;
+}
 void User::getName(ofstream& userOutputFile) {
     cout << "Please Enter Your Name: ";
     getline(cin >> ws, name);
@@ -137,6 +144,20 @@ bool issueOrDeposit() {
     }
 }
 
+bool authentication(string username, string password, vector<User> &user, User &currentUser) {
+    for(int i=0; i<user.size(); i++) {
+        if(user[i].returnName() == username && user[i].returnPassword() == password) {
+            currentUser = user[i];
+            return 1;
+        }
+    }
+    return 0;
+}
+
+void createNewAccount(ofstream& userOutputFile, User& tempUser1) {
+    tempUser1.newUserDetails(userOutputFile);
+}
+
 int main() {
     ifstream userInputFile;
     ofstream userOutputFile;
@@ -145,6 +166,7 @@ int main() {
     userInputFile.open("User.txt");
     string line;
     int count = 0;
+    {
     User tempUser;
     while(getline(userInputFile, line)) {
         if(count == 0) {
@@ -173,18 +195,21 @@ int main() {
             count = 0;
         }
     }
+    }
     userInputFile.close();
     
     bool isAccount,whatUserWantToDo,bookIssueOrDeposit;
     isAccount = startMessage();
-
+    User currentUser;
     if(isAccount == false) {
         cout << "Ok. So Let's first create your account.\n";
         User tempUser1;
-        userOutputFile.open("User.txt");
-        tempUser1.newUserDetails(userOutputFile);
+        userOutputFile.open("User.txt",userOutputFile.app);
+        // tempUser1.newUserDetails(userOutputFile);
+        createNewAccount(userOutputFile, tempUser1);
         user.push_back(tempUser1);
         userOutputFile.close();
+        currentUser = tempUser1;
         isAccount = true;
         cout << "Great Your Account Has Been Created." << endl;
         whatUserWantToDo = endMessage();
@@ -195,10 +220,27 @@ int main() {
         string name,password;
         cout << "Please Enter Your Account Information" << endl;
         cout << "Your Name\n";
-        cin >> name;
+        getline(cin >> ws, name);
         cout << "Password\n";
-        cin >> password;
+        getline(cin >> ws, password);
+        // Check if account exist
+        bool isAccountExist,newAccountCreate;
+        isAccountExist = authentication(name, password, user, currentUser);
+        if(isAccountExist == false) {
+            cout << "Sorry! Your credentials are wrong or you don't have any account in our database" << endl;
+            cout << "So. Do you want to create new account.[y/n]\n";
+            char a;
+            cin >> a;
+            if(a == 'Y' || a == 'y') {
+                userOutputFile.open("User.txt",userOutputFile.app);
+                createNewAccount(userOutputFile, currentUser);
+                user.push_back(currentUser);
+                userOutputFile.close();
+                cout << "Great Your Account Has Been Created." << endl;
+            } else {
+                return 0;
+            }
+        }
     }
-
     bookIssueOrDeposit = issueOrDeposit();
 }
