@@ -3,11 +3,48 @@
 #define ll long long
 using namespace std;
 
+class Book {
+    private:
+        string bookName, publisher, author;
+        int id,bookCount;
+    public:
+        void setBookFields(ifstream& bookInputFile, vector<Book>obj);
+};
+
+void Book::setBookFields(ifstream& bookInputFile, vector<Book>obj) {
+    string line;
+    int count = 0;
+    Book tempBook;
+    while(getline(bookInputFile, line)) {
+        if(count == 0) {
+            tempBook.bookName = line;
+            count++;
+        } else if(count == 1) {
+            tempBook.author = line;
+            count++;
+        } else if(count == 2) {
+            tempBook.publisher = line;
+            count++;
+        } else if(count == 3) {
+            tempBook.id = stoi(line);
+            count++;
+        } else if(count == 4) {
+            tempBook.bookCount = stoi(line); 
+            count++;
+        }
+        if(count == 5) {
+            obj.push_back(tempBook);
+            count = 0;
+        }
+    }
+}
+
 class User{
     private:
         string name,department,contactNumber,password;
         int age;
         static int id;
+        vector<int> booksIssued;
     public:
         void setName(User& obj,string name);
         void setAge(User& obj,int age);
@@ -15,6 +52,7 @@ class User{
         void setContact(User& obj,string contact);
         void setPassword(User& obj,string contact);
         void setUserID(User& obj,int id);
+        void setBookIssueId(User& obj, vector<int>id);
         void getName(ofstream& userOutputFile);
         void getAge(ofstream& userOutputFile);
         void getDepartment(ofstream& userOutputFile);
@@ -22,8 +60,11 @@ class User{
         void getPassword(ofstream& userOutputFile);
         void newUserDetails(ofstream& userOutputFile);
         void generateUserID(ofstream& userOutputFile);
+        void getBookIssueId(ofstream& userOutputFile);
         string returnName();
         string returnPassword();
+        bool booksNeedToBeDeposited();
+        void removeDepositedBook(int id);
 };
 
 string User::returnName() {
@@ -74,7 +115,10 @@ void User::getPassword(ofstream& userOutputFile) {
 void User::generateUserID(ofstream& userOutputFile) {
     ++id;
     userOutputFile << id << endl;
+}
 
+void User::getBookIssueId(ofstream& userOutputFile) {
+    userOutputFile << endl;
 }
 
 void User::newUserDetails(ofstream& userOutputFile) {
@@ -84,6 +128,7 @@ void User::newUserDetails(ofstream& userOutputFile) {
     User::getContact(userOutputFile);
     User::getPassword(userOutputFile);
     User::generateUserID(userOutputFile);
+    User::getBookIssueId(userOutputFile);
 }
 
 void User::setName(User& obj,string name) {
@@ -110,7 +155,32 @@ void User::setUserID(User& obj, int id) {
     obj.id = id;
 }
 
+void User::setBookIssueId(User& obj, vector<int> id) {
+    obj.booksIssued = id;
+}
+
+bool User::booksNeedToBeDeposited() {
+    for(int i=0; i<booksIssued.size(); i++) {
+        cout << booksIssued[i] << endl;
+    }
+    if(booksIssued.size() == 0) {
+        cout << "Sorry! But we cannot see anybook that you need to deposit\n";
+        return 0;
+    }
+    return 1;
+}
+
+void User::removeDepositedBook(int id) {
+    for(auto it=booksIssued.begin(); it!=booksIssued.end(); it++) {
+        if(*it == id) {
+            booksIssued.erase(it);
+            break;
+        }
+    }
+}
+
 int User::id = 0;
+
 
 
 bool startMessage() {
@@ -159,6 +229,11 @@ void createNewAccount(ofstream& userOutputFile, User& tempUser1) {
 }
 
 int main() {
+    ifstream bookInputFile;
+    vector<Book>book;
+    bookInputFile.open("Book.txt");
+    
+    bookInputFile.close();
     ifstream userInputFile;
     ofstream userOutputFile;
     vector<User> user;
@@ -189,8 +264,26 @@ int main() {
             int id = stoi(line);
             tempUser.setUserID(tempUser,id);
             count++;
+        } else if(count == 6) {
+            string a = "";
+            if(line == "") {
+                count++;
+            } else {
+                line += " ";
+                vector<int> id;
+                for(int i=0; i<line.size(); i++) {
+                    if(line[i] == ' ') {
+                        id.push_back(stoi(a));
+                        a = "";
+                    } else {
+                        a += line[i];
+                    }
+                }
+                tempUser.setBookIssueId(tempUser, id);
+                count++;
+            }
         }
-        if(count == 6) {
+        if(count == 7) {
             user.push_back(tempUser);
             count = 0;
         }
@@ -242,5 +335,26 @@ int main() {
             }
         }
     }
+    start:;
     bookIssueOrDeposit = issueOrDeposit();
+    if(bookIssueOrDeposit == 0) { // Deposit
+        int id;
+        bool isTrue;
+        cout << "Books need to be deposited are: \n";
+        isTrue = currentUser.booksNeedToBeDeposited();
+        if(isTrue) {
+            cout << "Enter Book ID: ";
+            cin >> id;
+            // remove book from book  issued
+            currentUser.removeDepositedBook(id);
+        } else {
+            bool continueOrNot;
+            continueOrNot = endMessage();
+            if(continueOrNot) {
+                goto start;
+            } else {
+                return 0;
+            }
+        }
+    }
 }
